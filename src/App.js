@@ -1,4 +1,6 @@
 import {useState} from "react";
+import Gallery from "./component/Gallery";
+import MoviePlay from "./component/MoviePlay";
 
 function ProductCategoryRow({category}) {
     return (
@@ -85,6 +87,8 @@ function FilterableProductTable({products}) {
             <SearchBar filterText={filterText} inStockOnly={inStockOnly} onFilterTextChange={setFilterText}
                        onInStockOnlyChange={setInStockOnly}/>
             <ProductTable filterText={filterText} inStockOnly={inStockOnly} products={products}/>
+            <Gallery/>
+            <MoviePlay />
         </div>
     );
 }
