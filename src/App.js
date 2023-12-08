@@ -4,6 +4,8 @@ import MoviePlay from "./component/MoviePlay";
 import FilterableProductTable from "./component/FilterableProductTable"
 import From from "./component/StateManager"
 import TaskManager from "./component/TaskManager"
+
+import Messager from "./component/chat/Messager";
 export default function App() {
     return (
         <>
@@ -11,7 +13,8 @@ export default function App() {
             <FilterableProductTable/>
 */}
           {/*  <From status="success"/>*/}
-            <TaskManager />
+           {/*<TaskManager />*/}
+            <Messager />
 
         </>
     );
