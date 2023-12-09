@@ -1,14 +1,9 @@
-export const initialState = {
-    selectedId: 0,
-    message: 'Hello'
-}
-
 export function messagerReducer(state, action) {
     switch (action.type) {
         case 'changed_selection': {
             return {
                 ...state,
-                selectedId: action.contactId,
+                selectedId: action.id,
                 message: ''
             };
         }

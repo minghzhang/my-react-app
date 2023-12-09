@@ -1,6 +1,6 @@
 import Chat from "./Chat"
 import ContactList from "./ContactList";
-import {initialState, messagerReducer} from "./messagerReduer"
+import {messagerReducer} from "./messagerReduer"
 import {useReducer} from "react";
 
 export default function Messager() {
@@ -11,7 +11,7 @@ export default function Messager() {
     return (
         <div>
             <ContactList contacts={contacts} selectedId={state.selectedId} dispatch={dispatch}/>
-            <Chat key={contact.id} message={message} contact={contact} dispatch={dispatch}/>
+            <Chat  message={message} contact={contact} dispatch={dispatch}/>
         </div>
     );
 }
@@ -21,3 +21,8 @@ const contacts = [
     {id: 1, name: 'Alice', email: 'alice@mail.com'},
     {id: 2, name: 'Bob', email: 'bob@mail.com'},
 ];
+
+const initialState = {
+    selectedId: contacts[0].id,
+    message: ''
+};

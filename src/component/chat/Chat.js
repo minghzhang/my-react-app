@@ -3,11 +3,23 @@ export default function Chat({contact, message, dispatch}) {
         <>
             <section className="chat">
             <textarea value={message} placeholder={'Chat to' + contact.name} onChange={(e) => {
-                //todo : dispatch edited_message
-                // read the input value from e.target.value
+                dispatch({
+                    type: 'edited_message',
+                    message: e.target.value
+                });
+
             }}/>
                 <br/>
-                <button>
+                <button onClick={(e) => {
+                    console.log("click");
+                    alert(contact.email + " received message: " + message);
+                    dispatch(
+                        {
+                            type: "edited_message",
+                            message: ''
+                        }
+                    );
+                }}>
                     Send to {contact.email}
                 </button>
             </section>
