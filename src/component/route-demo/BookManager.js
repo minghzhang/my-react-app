@@ -1,13 +1,14 @@
 import React, {useEffect, useState} from 'react';
 import axios from "axios";
 
-const BookItem = ({book, setFilterBooks}) => {
+const BookItem = ({book, refreshList}) => {
 
-    const [EditFormVisible, setEditFormVisible] = useState(false);
-
+    const [editFormVisible, setEditFormVisible] = useState(false);
     const [currentBook, setCurrentBook] = useState(book);
+    const [originalBook, setOriginalBook] = useState(book);
 
     function handleEdit() {
+        setOriginalBook({...currentBook})
         setEditFormVisible(true);
     }
 
@@ -26,25 +27,19 @@ const BookItem = ({book, setFilterBooks}) => {
     }
 
     async function handleUpdate() {
-        let response = await axios.put("http://127.0.0.1:8080/api/books/" + book.id, currentBook);
+        await axios.put("http://127.0.0.1:8080/api/books/" + book.id, currentBook);
         setEditFormVisible(false);
-        axios.get("http://127.0.0.1:8080/api/books")
-            .then(response => {
-                setFilterBooks(response.data);
-            }).catch(error => {
-            console.error("Error fetching data: ", error);
-        })
+        refreshList();
+    }
+
+    function handleCancel() {
+        setCurrentBook({...originalBook})
+        setEditFormVisible(false);
     }
 
     async function handleDelete() {
-        let response = await axios.delete("http://127.0.0.1:8080/api/books/" + book.id);
-        console.log("handleDelete success");
-        axios.get("http://127.0.0.1:8080/api/books")
-            .then(response => {
-                setFilterBooks(response.data);
-            }).catch(error => {
-            console.error("Error fetching data: ", error);
-        })
+        await axios.delete("http://127.0.0.1:8080/api/books/" + book.id);
+        refreshList();
     }
 
 
@@ -52,11 +47,16 @@ const BookItem = ({book, setFilterBooks}) => {
         <>
             <tr>
                 <td>{book.id}</td>
-                <td>{EditFormVisible ? <input value={currentBook.name} onChange={handleNameChange}/> : book.name}</td>
-                <td>{EditFormVisible ?
+                <td>{editFormVisible ? <input value={currentBook.name} onChange={handleNameChange}/> : book.name}</td>
+                <td>{editFormVisible ?
                     <input value={currentBook.author} onChange={handleAuthorChange}/> : book.author}</td>
                 <td>
-                    {EditFormVisible ? <button onClick={handleUpdate}>Update</button> :
+                    {editFormVisible ?
+                        <>
+                            <button onClick={handleUpdate}>Update</button>
+                            <button onClick={handleCancel}>Cancel</button>
+                        </>
+                        :
                         <>
                             <button onClick={handleEdit}>Edit</button>
                             <button onClick={handleDelete}>Delete</button>
@@ -69,10 +69,10 @@ const BookItem = ({book, setFilterBooks}) => {
 };
 
 
-const BookTable = ({books, setFilterBooks}) => {
+const BookTable = ({books, freshList}) => {
 
     const rows = books.map((book) => <BookItem key={book.id} book={book}
-                                               setFilterBooks={setFilterBooks}/>);
+                                               refreshList={freshList}/>);
     return (
         <table>
             <thead>
@@ -90,7 +90,7 @@ const BookTable = ({books, setFilterBooks}) => {
     );
 }
 
-const AddBooks = ({books, setFilterBooks}) => {
+const AddBooks = ({freshList}) => {
 
     const [FormVisible, setFormVisible] = useState(false);
     const [bookForAdd, setBookForAdd] = useState({"name": "", "author": ""})
@@ -101,22 +101,13 @@ const AddBooks = ({books, setFilterBooks}) => {
 
     async function handleSubmitAddingBooks() {
         setFormVisible(false);
-
         try {
-            const response = await axios.post('http://127.0.0.1:8080/api/books', bookForAdd);
-            axios.get("http://127.0.0.1:8080/api/books")
-                .then(response => {
-                    setFilterBooks(response.data);
-                    setBookForAdd({"name": "", "author": ""});
-                }).catch(error => {
-                console.error("Error fetching data: ", error);
-            })
-
+            await axios.post('http://127.0.0.1:8080/api/books', bookForAdd);
+            freshList();
+            setBookForAdd({"name": "", "author": ""});
         } catch (error) {
             console.error("addBooks error", error)
         }
-
-
     }
 
     function handleNameChange(e) {
@@ -152,14 +143,9 @@ const AddBooks = ({books, setFilterBooks}) => {
     );
 }
 
-const SearchBar = ({nameFilterText, setNameFilterText, books, setFilterBooks}) => {
+const SearchBar = ({nameFilterText, setNameFilterText, refreshList}) => {
     function handleQuery(e) {
-        axios.get("http://127.0.0.1:8080/api/books")
-            .then(response => {
-                setFilterBooks(response.data);
-            }).catch(error => {
-            console.error("Error fetching data: ", error);
-        })
+        refreshList();
     }
 
     function handleNameTextChange(e) {
@@ -176,36 +162,29 @@ const SearchBar = ({nameFilterText, setNameFilterText, books, setFilterBooks}) =
 }
 
 export default function BookManager() {
-    const [nameFilterText, setNameFilterTExt] = useState('');
-    const [books, setBooks] = useState([]);
+    const [nameFilterText, setNameFilterText] = useState('');
     const [filterBooks, setFitlerBooks] = useState([]);
+
+    const refreshList = async () => {
+        try {
+            const response = await axios.get("http://127.0.0.1:8080/api/books");
+            setFitlerBooks(response.data.filter(book => book.name.toLowerCase().includes(nameFilterText)));
+        } catch (error) {
+            console.error("Error freshList: ", error);
+        }
+    }
 
 
     useEffect(() => {
-        let isMounted = true;
-        const fetchData = async () => {
-            const response = await axios.get("http://127.0.0.1:8080/api/books");
-            if (isMounted) {
-                setBooks(response.data);
-                let filteredBooks = response.data.filter(book => book.name.toLowerCase().indexOf(nameFilterText.toLowerCase()) != -1);
-                setFitlerBooks(filteredBooks);
-            }
-        }
-
-        fetchData();
-        return () => {
-            isMounted = false;
-        }
-
+        refreshList();
     }, [nameFilterText]);
 
 
     return (
         <>
-            <SearchBar nameFilterText={nameFilterText} setNameFilterText={setNameFilterTExt} books={books}
-                       setFilterBooks={setFitlerBooks}/>
-            <AddBooks setFilterBooks={setFitlerBooks} books={books}/>
-            <BookTable books={filterBooks} setFilterBooks={setFitlerBooks}/>
+            <SearchBar nameFilterText={nameFilterText} setNameFilterText={setNameFilterText} refreshList={refreshList}/>
+            <AddBooks freshList={refreshList}/>
+            <BookTable books={filterBooks} freshList={refreshList}/>
         </>
     );
 }
