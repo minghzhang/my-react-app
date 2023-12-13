@@ -1,14 +1,8 @@
-import React, { useState } from 'react';
-import { Form, Input, InputNumber, Popconfirm, Table, Typography } from 'antd';
-const originData = [];
-for (let i = 0; i < 100; i++) {
-    originData.push({
-        key: i.toString(),
-        name: `Edward ${i}`,
-        age: 32,
-        address: `London Park no. ${i}`,
-    });
-}
+import React, {useEffect, useState} from 'react';
+import {Form, Input, InputNumber, Popconfirm, Table, Typography, Modal, Button} from 'antd';
+import axios from "axios";
+import BookAddingSection from "./antddemo/BookAddingSection"
+
 const EditableCell = ({
                           editing,
                           dataIndex,
@@ -19,7 +13,7 @@ const EditableCell = ({
                           children,
                           ...restProps
                       }) => {
-    const inputNode = inputType === 'number' ? <InputNumber /> : <Input />;
+    const inputNode = inputType === 'number' ? <InputNumber/> : <Input/>;
     return (
         <td {...restProps}>
             {editing ? (
@@ -45,44 +39,65 @@ const EditableCell = ({
 };
 const App = () => {
     const [form] = Form.useForm();
-    const [data, setData] = useState(originData);
+    const [data, setData] = useState([]);
     const [editingKey, setEditingKey] = useState('');
-    const isEditing = (record) => record.key === editingKey;
+    const fetchData = async () => {
+        try {
+            let response = await axios.get("http://127.0.0.1:8080/api/books");
+            setData(response.data);
+        } catch (e) {
+            console.error("fetchData error: ", e);
+        }
+    }
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const isEditing = (record) => record.id === editingKey;
     const edit = (record) => {
         form.setFieldsValue({
             name: '',
-            age: '',
-            address: '',
+            author: '',
             ...record,
         });
-        setEditingKey(record.key);
+        setEditingKey(record.id);
     };
     const cancel = () => {
         setEditingKey('');
     };
-    const save = async (key) => {
+    const save = async (record) => {
         try {
             const row = await form.validateFields();
-            const newData = [...data];
-            const index = newData.findIndex((item) => key === item.key);
-            if (index > -1) {
-                const item = newData[index];
-                newData.splice(index, 1, {
-                    ...item,
-                    ...row,
-                });
-                setData(newData);
-                setEditingKey('');
-            } else {
-                newData.push(row);
-                setData(newData);
-                setEditingKey('');
-            }
+            let fieldsValue = form.getFieldsValue();
+            console.log("save record:" + form.getFieldsValue());
+
+            await axios.put(`http://127.0.0.1:8080/api/books/` + record.id, fieldsValue);
+            setEditingKey('');
+            fetchData();
         } catch (errInfo) {
             console.log('Validate Failed:', errInfo);
         }
     };
+
+
+    const deleteRecord = async (record) => {
+        try {
+            await axios.delete(`http://127.0.0.1:8080/api/books/` + record.id);
+            setEditingKey('');
+            fetchData();
+        } catch (errInfo) {
+            console.log('Validate Failed:', errInfo);
+        }
+    }
+
     const columns = [
+        {
+            title: 'Id',
+            dataIndex: 'id',
+            width: '25%',
+            editable: false,
+        },
         {
             title: 'name',
             dataIndex: 'name',
@@ -90,15 +105,9 @@ const App = () => {
             editable: true,
         },
         {
-            title: 'age',
-            dataIndex: 'age',
+            title: 'Author',
+            dataIndex: 'author',
             width: '15%',
-            editable: true,
-        },
-        {
-            title: 'address',
-            dataIndex: 'address',
-            width: '40%',
             editable: true,
         },
         {
@@ -109,7 +118,7 @@ const App = () => {
                 return editable ? (
                     <span>
             <Typography.Link
-                onClick={() => save(record.key)}
+                onClick={() => save(record)}
                 style={{
                     marginRight: 8,
                 }}
@@ -121,9 +130,19 @@ const App = () => {
             </Popconfirm>
           </span>
                 ) : (
-                    <Typography.Link disabled={editingKey !== ''} onClick={() => edit(record)}>
-                        Edit
-                    </Typography.Link>
+                    <>
+                        <Typography.Link disabled={editingKey !== ''} onClick={() => edit(record)}>
+                            Edit
+                        </Typography.Link>
+                        &nbsp;&nbsp;&nbsp;
+
+
+                        <Popconfirm title="Sure to delete" onConfirm={() => deleteRecord(record)}>
+                            <Typography.Link disabled={editingKey !== ''}>
+                                Delete
+                            </Typography.Link>
+                        </Popconfirm>
+                    </>
                 );
             },
         },
@@ -136,7 +155,7 @@ const App = () => {
             ...col,
             onCell: (record) => ({
                 record,
-                inputType: col.dataIndex === 'age' ? 'number' : 'text',
+                inputType: col.dataIndex === 'id' ? 'number' : 'text',
                 dataIndex: col.dataIndex,
                 title: col.title,
                 editing: isEditing(record),
@@ -144,22 +163,26 @@ const App = () => {
         };
     });
     return (
-        <Form form={form} component={false}>
-            <Table
-                components={{
-                    body: {
-                        cell: EditableCell,
-                    },
-                }}
-                bordered
-                dataSource={data}
-                columns={mergedColumns}
-                rowClassName="editable-row"
-                pagination={{
-                    onChange: cancel,
-                }}
-            />
-        </Form>
+        <>
+
+            <BookAddingSection fetchData={fetchData}/>
+            <Form form={form} component={false}>
+                <Table
+                    components={{
+                        body: {
+                            cell: EditableCell,
+                        },
+                    }}
+                    bordered
+                    dataSource={data}
+                    columns={mergedColumns}
+                    rowClassName="editable-row"
+                    pagination={{
+                        onChange: cancel,
+                    }}
+                />
+            </Form>
+        </>
     );
 };
 export default App;
