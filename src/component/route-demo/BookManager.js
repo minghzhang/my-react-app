@@ -90,7 +90,7 @@ const BookTable = ({books, freshList}) => {
     );
 }
 
-const AddBooks = ({freshList}) => {
+const AddBooks = ({refreshList}) => {
 
     const [FormVisible, setFormVisible] = useState(false);
     const [bookForAdd, setBookForAdd] = useState({"name": "", "author": ""})
@@ -103,7 +103,7 @@ const AddBooks = ({freshList}) => {
         setFormVisible(false);
         try {
             await axios.post('http://127.0.0.1:8080/api/books', bookForAdd);
-            freshList();
+            refreshList();
             setBookForAdd({"name": "", "author": ""});
         } catch (error) {
             console.error("addBooks error", error)
@@ -167,7 +167,9 @@ export default function BookManager() {
 
     const refreshList = async () => {
         try {
+            console.log("invoking refreshList begin");
             const response = await axios.get("http://127.0.0.1:8080/api/books");
+            console.log("invoking refreshList end");
             setFitlerBooks(response.data.filter(book => book.name.toLowerCase().includes(nameFilterText)));
         } catch (error) {
             console.error("Error freshList: ", error);
@@ -176,14 +178,16 @@ export default function BookManager() {
 
 
     useEffect(() => {
+        console.log("invoke useEffect begin");
         refreshList();
-    }, [nameFilterText]);
+        console.log("invoke useEffect end");
+    }, []);
 
 
     return (
         <>
             <SearchBar nameFilterText={nameFilterText} setNameFilterText={setNameFilterText} refreshList={refreshList}/>
-            <AddBooks freshList={refreshList}/>
+            <AddBooks refreshList={refreshList}/>
             <BookTable books={filterBooks} freshList={refreshList}/>
         </>
     );

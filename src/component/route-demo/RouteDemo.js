@@ -25,7 +25,7 @@ export default function RouteDemo() {
                 <Route path="/" element={<Home/>}/>
                 <Route path="/about" element={<About/>}/>
                 <Route path="/contact" element={<Contact/>}/>
-                <Route path="/book-manager" element={<BookManagerAntD/>}/>
+                <Route path="/book-manager" element={<BookManager/>}/>
             </Routes>
         </Router>
     );
